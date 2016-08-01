@@ -12,36 +12,19 @@ import com.googlecode.objectify.annotation.Id;
 @Entity
 @Cache
 public class Profile {
+	@Id
+	String userId;
+
 	String displayName;
+	
 	String mainEmail;
+	
 	TeeShirtSize teeShirtSize;
 
 	private List<String> conferenceKeysToAttend;
 
-	public List<String> getConferenceKeysToAttend() {
-		return (this.conferenceKeysToAttend == null ? new ArrayList<String>()
-				: ImmutableList.copyOf(this.conferenceKeysToAttend));
-	}
+	private List<String> sessions;
 
-	public void addToconferenceKeysToAttend(String conferenceKey) {
-		if (this.conferenceKeysToAttend == null) {
-			this.conferenceKeysToAttend = new ArrayList<String>();
-		}
-		conferenceKeysToAttend.add(conferenceKey);
-	}
-
-	public void removeToconferenceKeysToAttend(String conferenceKey) {
-		if (this.conferenceKeysToAttend != null) {
-			conferenceKeysToAttend.remove(conferenceKey);
-		}
-	}
-	
-	public void setConferenceKeysToAttend(List<String> conferenceKeysToAttend) {
-		this.conferenceKeysToAttend = conferenceKeysToAttend;
-	}
-
-	@Id
-	String userId;
 
 	/**
 	 * Public constructor for Profile.
@@ -99,6 +82,46 @@ public class Profile {
 		if (teeShirtSize != null) {
 			this.teeShirtSize = teeShirtSize;
 		}
+	}
+	
+	public List<String> getSessionsKey() {
+		return (this.sessions == null ? new ArrayList<String>() : ImmutableList
+				.copyOf(this.sessions));
+	}
+
+	public void addToSessionKeys(String conferenceKey) {
+		if (this.sessions == null) {
+			this.sessions = new ArrayList<String>();
+		}
+		sessions.add(conferenceKey);
+	}
+
+	public void removeSessionKeys(String sessionKey) {
+		if (this.sessions != null) {
+			sessions.remove(sessionKey);
+		}
+	}
+
+	public List<String> getConferenceKeysToAttend() {
+		return (this.conferenceKeysToAttend == null ? new ArrayList<String>()
+				: ImmutableList.copyOf(this.conferenceKeysToAttend));
+	}
+
+	public void addToconferenceKeysToAttend(String conferenceKey) {
+		if (this.conferenceKeysToAttend == null) {
+			this.conferenceKeysToAttend = new ArrayList<String>();
+		}
+		conferenceKeysToAttend.add(conferenceKey);
+	}
+
+	public void removeToconferenceKeysToAttend(String conferenceKey) {
+		if (this.conferenceKeysToAttend != null) {
+			conferenceKeysToAttend.remove(conferenceKey);
+		}
+	}
+
+	public void setConferenceKeysToAttend(List<String> conferenceKeysToAttend) {
+		this.conferenceKeysToAttend = conferenceKeysToAttend;
 	}
 
 }

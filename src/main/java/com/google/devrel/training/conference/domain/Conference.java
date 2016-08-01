@@ -106,7 +106,7 @@ public class Conference {
     
     
     private List<String> sessions;
-
+    
     /**
      * Just making the default constructor private.
      */

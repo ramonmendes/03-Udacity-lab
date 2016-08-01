@@ -36,7 +36,6 @@ import com.google.devrel.training.conference.form.ProfileForm;
 import com.google.devrel.training.conference.form.ProfileForm.TeeShirtSize;
 import com.google.devrel.training.conference.form.SessionForm;
 import com.google.devrel.training.conference.form.SessionOfConferenceForm;
-import com.google.devrel.training.enumeration.TypeOfSession;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Work;
 import com.googlecode.objectify.cmd.Query;
@@ -74,9 +73,7 @@ public class ConferenceApi {
 	@ApiMethod(name = "createConference", path = "conference", httpMethod = HttpMethod.POST)
 	public Conference createConference(final User user,
 			final ConferenceForm conferenceForm) throws UnauthorizedException {
-		if (user == null) {
-			throw new UnauthorizedException("Authorization required");
-		}
+		validateUser(user);
 
 		// Get the userId of the logged in User
 		String userId = user.getUserId();
@@ -154,9 +151,7 @@ public class ConferenceApi {
 			throws UnauthorizedException {
 
 		// If the user is not logged in, throw an UnauthorizedException
-		if (user == null) {
-			throw new UnauthorizedException("Authorization required");
-		}
+		validateUser(user);
 
 		Profile profile = buildProfile(user, profileForm);
 		// Save the entity in the datastore
@@ -215,9 +210,7 @@ public class ConferenceApi {
 	 */
 	@ApiMethod(name = "getProfile", path = "profile", httpMethod = HttpMethod.GET)
 	public Profile getProfile(final User user) throws UnauthorizedException {
-		if (user == null) {
-			throw new UnauthorizedException("Authorization required");
-		}
+		validateUser(user);
 
 		// load the Profile Entity
 		String userId = user.getUserId();
@@ -270,9 +263,7 @@ public class ConferenceApi {
 	@ApiMethod(name = "getConferencesCreated", path = "getConferencesCreated", httpMethod = HttpMethod.POST)
 	public List<Conference> getConferencesCreated(User user)
 			throws UnauthorizedException {
-		if (user == null) {
-			throw new UnauthorizedException("Authorization required");
-		}
+		validateUser(user);
 		Key userKey = getKey(user);
 		Query<Conference> order = ofy().load().type(Conference.class)
 				.ancestor(userKey).order("name");
@@ -302,9 +293,7 @@ public class ConferenceApi {
 			throws UnauthorizedException, NotFoundException,
 			ForbiddenException, ConflictException {
 		// If not signed in, throw a 401 error.
-		if (user == null) {
-			throw new UnauthorizedException("Authorization required");
-		}
+		validateUser(user);
 
 		temp = websafeConferenceKey;
 
@@ -393,9 +382,7 @@ public class ConferenceApi {
 	private Profile verifyUserLogged(final User user)
 			throws UnauthorizedException, NotFoundException {
 		// If not signed in, throw a 401 error.
-		if (user == null) {
-			throw new UnauthorizedException("Authorization required");
-		}
+		validateUser(user);
 		Profile profile = ofy().load()
 				.key(Key.create(Profile.class, getUserId(user))).now();
 		if (profile == null) {
@@ -504,7 +491,9 @@ public class ConferenceApi {
 	}
 	
 	@ApiMethod(name = "createSession", path = "createSession", httpMethod = HttpMethod.POST)
-	public WrappedBoolean createSession(final User user, SessionOfConferenceForm form) throws ParseException {
+	public WrappedBoolean createSession(final User user, SessionOfConferenceForm form) throws ParseException, UnauthorizedException {
+		validateUser(user);
+		
 		Key<Conference> conferenceKey = Key.create(form.getConference());
 		
 		SessionForm sessionForm = form.getSessionForm();
@@ -536,8 +525,9 @@ public class ConferenceApi {
 	}
 	
 	@ApiMethod(name = "getConferenceSessions", path = "getConferenceSessions", httpMethod = HttpMethod.GET)
-	public List<Session> getConferenceSessions(
-			@Named("websafeConferenceKey") final String websafeConferenceKey) {
+	public List<Session> getConferenceSessions(User user,
+			@Named("websafeConferenceKey") final String websafeConferenceKey) throws UnauthorizedException {
+		validateUser(user);
 		return ofy()
 				.load()
 				.type(Session.class)
@@ -545,8 +535,9 @@ public class ConferenceApi {
 				.list();
 	}
 	@ApiMethod(name = "getConferenceSessionsByType", path = "getConferenceSessionsByType", httpMethod = HttpMethod.GET)
-	public List<Session> getConferenceSessionsByType(
-			@Named("websafeConferenceKey") final String websafeConferenceKey, @Named("typeOfSession") String typeOfSession) {
+	public List<Session> getConferenceSessionsByType(User user,
+			@Named("websafeConferenceKey") final String websafeConferenceKey, @Named("typeOfSession") String typeOfSession) throws UnauthorizedException {
+		validateUser(user);
 		return ofy()
 				.load()
 				.type(Session.class)
@@ -556,8 +547,9 @@ public class ConferenceApi {
 	}
 	
 	@ApiMethod(name = "getSessionsBySpeaker", path = "getSessionsBySpeaker", httpMethod = HttpMethod.GET)
-	public List<Session> getSessionsBySpeaker(
-			@Named("websafeConferenceKey") final String websafeConferenceKey, @Named("speaker") String speaker) {
+	public List<Session> getSessionsBySpeaker(User user,
+			@Named("websafeConferenceKey") final String websafeConferenceKey, @Named("speaker") String speaker) throws UnauthorizedException {
+		validateUser(user);
 		return ofy()
 				.load()
 				.type(Session.class)
@@ -565,4 +557,48 @@ public class ConferenceApi {
 				.filter("speaker =",speaker)
 				.list();
 	}
+	
+	@ApiMethod(name = "getSessionsInWishlist", path = "getSessionsInWishlist", httpMethod = HttpMethod.GET)
+	public Collection<Session> getSessionsInWishlist(User user) throws UnauthorizedException {
+		validateUser(user);
+		
+		Profile profile = getProfile(user);
+		
+		List<Key<Session>> keysSession = new ArrayList<>();
+		for (String keyString : profile.getSessionsKey()) {
+			keysSession.add(Key.<Session> create(keyString));
+		}
+		
+		return ofy().load().keys(keysSession).values();
+	}
+	
+	@ApiMethod(name = "deleteSessionInWishlist", path = "deleteSessionInWishlist", httpMethod = HttpMethod.DELETE)
+	public WrappedBoolean deleteSessionInWishlist(User user,@Named("sessionKey") final String sessionKey) throws UnauthorizedException {
+		validateUser(user);
+		
+		Profile profile = getProfile(user);
+		profile.removeSessionKeys(sessionKey);
+		ofy().save().entities(profile).now();
+		
+		return new WrappedBoolean(true);
+	}
+	
+	@ApiMethod(name = "addSessionToWishlist", path = "addSessionToWishlist", httpMethod = HttpMethod.POST)
+	public WrappedBoolean addSessionToWishlist(User user,@Named("sessionKey") final String sessionKey) throws UnauthorizedException{
+		validateUser(user);
+		
+		Profile profile = getProfile(user);
+		profile.addToSessionKeys(sessionKey);
+		ofy().save().entity(profile).now();
+		
+		return new WrappedBoolean(true);
+	}
+
+	private void validateUser(User user) throws UnauthorizedException {
+		// If not signed in, throw a 401 error.
+		if (user == null) {
+			throw new UnauthorizedException("Authorization required");
+		}
+	}
+
 }
