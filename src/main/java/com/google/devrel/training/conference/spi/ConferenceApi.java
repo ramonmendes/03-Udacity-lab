@@ -554,4 +554,15 @@ public class ConferenceApi {
 				.filter("typeOfSession =",typeOfSession)
 				.list();
 	}
+	
+	@ApiMethod(name = "getSessionsBySpeaker", path = "getSessionsBySpeaker", httpMethod = HttpMethod.GET)
+	public List<Session> getSessionsBySpeaker(
+			@Named("websafeConferenceKey") final String websafeConferenceKey, @Named("speaker") String speaker) {
+		return ofy()
+				.load()
+				.type(Session.class)
+				.ancestor(Key.create(websafeConferenceKey))
+				.filter("speaker =",speaker)
+				.list();
+	}
 }

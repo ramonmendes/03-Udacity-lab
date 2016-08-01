@@ -23,6 +23,7 @@ public class Session {
 	
 	private String highlights;
 	
+	@Index
 	private String speaker;
 	
 	private Long duration;
